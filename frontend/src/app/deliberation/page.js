@@ -31,7 +31,8 @@ export default function DeliberationPage() {
   if (!agentResults.length) {
     return (
       <div className="card" role="alert">
-        <p>No evaluation found. Submit a case first.</p>
+        <h3>No Evaluation Found</h3>
+        <p>Submit a case first to see agent deliberations.</p>
         <button className="button" onClick={() => router.push("/submit")}>
           Go to Submit
         </button>
@@ -40,9 +41,12 @@ export default function DeliberationPage() {
   }
 
   return (
-    <div>
-      <div className="card">
-        <h2>3) Agent Deliberation</h2>
+    <>
+      <div className="page-header">
+        <h2>
+          <span className="step-badge">3</span>
+          Agent Deliberation
+        </h2>
         <p role="status" aria-live="polite">
           {revealing
             ? `Revealing agent evaluations… (${revealedCount}/${agentResults.length})`
@@ -50,11 +54,13 @@ export default function DeliberationPage() {
         </p>
       </div>
 
-      <div className="row" role="list" aria-label="Agent evaluations">
+      <div className="agents-grid" role="list" aria-label="Agent evaluations">
         {agentResults.map((agent, idx) => (
-          <div role="listitem" key={agent.role} style={{ flex: 1, minWidth: 240 }}>
+          <div role="listitem" key={agent.role}>
             {idx < revealedCount ? (
-              <AgentCard agent={agent} loading={false} />
+              <div className="fade-in">
+                <AgentCard agent={agent} loading={false} />
+              </div>
             ) : (
               <AgentCardSkeleton />
             )}
@@ -63,27 +69,34 @@ export default function DeliberationPage() {
       </div>
 
       {!revealing && consensus && (
-        <div className="card consensus-card">
+        <div className="card consensus-card fade-in">
           <h3>Consensus Analysis</h3>
           <div className="consensus-grid">
             {consensus.std_deviation != null && (
               <div className="consensus-stat">
                 <span className="consensus-label">Score Spread (σ)</span>
-                <span className="consensus-value">{consensus.std_deviation.toFixed(1)}</span>
+                <span className="consensus-value">
+                  {consensus.std_deviation.toFixed(1)}
+                </span>
               </div>
             )}
             {consensus.agreement_level && (
               <div className="consensus-stat">
                 <span className="consensus-label">Agreement</span>
-                <span className={`badge ${consensus.agreement_level.toLowerCase()}`}>
+                <span
+                  className={`badge ${consensus.agreement_level.toLowerCase()}`}
+                >
                   {consensus.agreement_level}
                 </span>
               </div>
             )}
           </div>
           {consensus.disagreements?.length > 0 && (
-            <details>
-              <summary><strong>Disagreements</strong> ({consensus.disagreements.length})</summary>
+            <details style={{ marginTop: 12 }}>
+              <summary>
+                <strong>Disagreements</strong> (
+                {consensus.disagreements.length})
+              </summary>
               <ul>
                 {consensus.disagreements.map((d, i) => (
                   <li key={i}>{d}</li>
@@ -94,14 +107,15 @@ export default function DeliberationPage() {
         </div>
       )}
 
-      <button
-        className="button"
-        disabled={revealing}
-        onClick={() => router.push("/verdict")}
-        style={{ marginTop: 12 }}
-      >
-        View Final Verdict
-      </button>
-    </div>
+      <div style={{ marginTop: 16 }}>
+        <button
+          className="button"
+          disabled={revealing}
+          onClick={() => router.push("/verdict")}
+        >
+          View Final Verdict
+        </button>
+      </div>
+    </>
   );
 }

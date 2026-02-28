@@ -13,9 +13,9 @@ import {
 import ErrorAlert from "@/components/ErrorAlert";
 
 function decisionClass(decision) {
-  if (decision === "SHIP") return "badge ship";
-  if (decision === "ITERATE") return "badge iterate";
-  return "badge reject";
+  if (decision === "SHIP") return "ship";
+  if (decision === "ITERATE") return "iterate";
+  return "reject";
 }
 
 function classifyTxError(err) {
@@ -45,14 +45,16 @@ function classifyTxError(err) {
   }
   if (lower.includes("nonce") || lower.includes("replacement")) {
     return {
-      message: "Transaction conflict — try resetting MetaMask activity or wait.",
+      message:
+        "Transaction conflict — try resetting MetaMask activity or wait.",
       category: "wallet",
       retryable: true,
     };
   }
   if (lower.includes("execution reverted")) {
     return {
-      message: "Smart contract rejected the transaction. The verdict may already be saved.",
+      message:
+        "Smart contract rejected the transaction. The verdict may already be saved.",
       category: "server",
       details: msg,
       retryable: false,
@@ -82,7 +84,8 @@ export default function VerdictPage() {
   const risk = agent_results.find((a) => a.role === "Risk & Ethics Agent");
 
   const shortVerdict = useMemo(() => {
-    const text = final_verdict?.summary || final_verdict?.decision || "No summary";
+    const text =
+      final_verdict?.summary || final_verdict?.decision || "No summary";
     return text.slice(0, 140);
   }, [final_verdict]);
 
@@ -130,7 +133,8 @@ export default function VerdictPage() {
   if (!final_verdict) {
     return (
       <div className="card" role="alert">
-        <p>No verdict found. Start from case submission.</p>
+        <h3>No Verdict Found</h3>
+        <p>Start from case submission to get an AI evaluation.</p>
         <button className="button" onClick={() => router.push("/submit")}>
           Go to Submit
         </button>
@@ -138,29 +142,60 @@ export default function VerdictPage() {
     );
   }
 
+  const dClass = decisionClass(final_verdict.decision);
+
   return (
-    <div className="card">
-      <h2>4) Final Verdict</h2>
-      <p>
-        Final score: <strong>{final_verdict.final_score}</strong>
-      </p>
-      <p>
-        Decision:{" "}
-        <span className={decisionClass(final_verdict.decision)}>
+    <>
+      <div className="page-header">
+        <h2>
+          <span className="step-badge">4</span>
+          Final Verdict
+        </h2>
+        <p>Review the AI evaluation result and save it on-chain</p>
+      </div>
+
+      <div className="card card-accent" style={{ textAlign: "center" }}>
+        <div className={`verdict-score-ring ${dClass}`}>
+          <span className="score-value">{final_verdict.final_score}</span>
+        </div>
+        <span className={`badge ${dClass}`} style={{ fontSize: "0.875rem", padding: "6px 20px" }}>
           {final_verdict.decision}
         </span>
-      </p>
-      <p>{final_verdict.summary}</p>
+        <p style={{ marginTop: 16, maxWidth: 560, marginInline: "auto" }}>
+          {final_verdict.summary}
+        </p>
+      </div>
+
+      <div className="score-breakdown">
+        <div className="score-item">
+          <div className="score-item-label">Feasibility</div>
+          <div className="score-item-value" style={{ color: "var(--blue)" }}>
+            {feasibility?.score ?? "–"}
+          </div>
+        </div>
+        <div className="score-item">
+          <div className="score-item-label">Innovation</div>
+          <div className="score-item-value" style={{ color: "var(--purple)" }}>
+            {innovation?.score ?? "–"}
+          </div>
+        </div>
+        <div className="score-item">
+          <div className="score-item-label">Risk</div>
+          <div className="score-item-value" style={{ color: "var(--amber)" }}>
+            {risk?.score ?? "–"}
+          </div>
+        </div>
+      </div>
 
       {final_verdict.next_steps?.length > 0 && (
-        <>
-          <p><strong>Next steps</strong></p>
-          <ul>
+        <div className="card">
+          <h3>Recommended Next Steps</h3>
+          <ul style={{ paddingLeft: 20 }}>
             {final_verdict.next_steps.map((step, i) => (
-              <li key={`step-${i}`}>{step}</li>
+              <li key={`step-${i}`} style={{ marginBottom: 6, color: "var(--text-secondary)", fontSize: "0.9375rem" }}>{step}</li>
             ))}
           </ul>
-        </>
+        </div>
       )}
 
       <div className="trust-info">
@@ -173,54 +208,69 @@ export default function VerdictPage() {
         </p>
         {session?.attestation?.signature && (
           <p className="attestation-info">
-            Backend attestation included. The AI output was cryptographically
-            signed by the backend before submission, binding scores to a
-            verifiable signature.
+            Backend attestation included — the AI output was cryptographically
+            signed, binding scores to a verifiable signature.
           </p>
         )}
       </div>
 
-      <div className="row">
-        <button
-          className="button"
-          disabled={saving || !!txHash}
-          onClick={saveOnChain}
-          aria-describedby={txStage ? "tx-stage" : undefined}
-        >
-          {saving ? "Processing…" : txHash ? "Saved ✓" : "Save decision on-chain"}
-        </button>
-        <button className="button button-ghost" onClick={() => router.push("/history")}>
-          Go to History
-        </button>
-      </div>
-
-      {txStage && (
-        <p id="tx-stage" className="progress-text" role="status" aria-live="polite">
-          {txStage}
-        </p>
-      )}
-
-      {txHash && (
-        <div className="tx-confirmation" role="status">
-          <p><strong>Saved on-chain successfully.</strong></p>
-          <p>
-            Tx:{" "}
-            <a
-              href={`${MONAD_BLOCK_EXPLORER_URL}/tx/${txHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {txHash.slice(0, 10)}…{txHash.slice(-8)}
-            </a>
-          </p>
-          <p className="verify-hint">
-            Verify this record on the block explorer. The data is immutable and
-            publicly readable.
-          </p>
+      <div className="card">
+        <div className="row">
+          <button
+            className={`button ${txHash ? "button-success" : ""}`}
+            disabled={saving || !!txHash}
+            onClick={saveOnChain}
+            aria-describedby={txStage ? "tx-stage" : undefined}
+          >
+            {saving
+              ? "Processing…"
+              : txHash
+                ? "Saved on-chain"
+                : "Save Decision On-Chain"}
+          </button>
+          <button
+            className="button button-ghost"
+            onClick={() => router.push("/history")}
+          >
+            View History
+          </button>
         </div>
-      )}
 
-      <ErrorAlert error={error} onRetry={saveOnChain} onDismiss={() => setError(null)} />
-    </div>
+        {txStage && (
+          <div className="tx-stage" id="tx-stage" role="status" aria-live="polite">
+            <div className="spinner" aria-hidden="true" />
+            {txStage}
+          </div>
+        )}
+
+        {txHash && (
+          <div className="tx-confirmation" role="status">
+            <p>
+              <strong>Verdict saved on-chain successfully.</strong>
+            </p>
+            <p>
+              Tx:{" "}
+              <a
+                href={`${MONAD_BLOCK_EXPLORER_URL}/tx/${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {txHash.slice(0, 10)}…{txHash.slice(-8)}
+              </a>
+            </p>
+            <p className="verify-hint">
+              Verify this record on the block explorer. The data is immutable and
+              publicly readable.
+            </p>
+          </div>
+        )}
+
+        <ErrorAlert
+          error={error}
+          onRetry={saveOnChain}
+          onDismiss={() => setError(null)}
+        />
+      </div>
+    </>
   );
 }

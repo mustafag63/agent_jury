@@ -1,10 +1,6 @@
 export function SkeletonLine({ width = "100%" }) {
   return (
-    <div
-      className="skeleton-line"
-      style={{ width }}
-      aria-hidden="true"
-    />
+    <div className="skeleton-line" style={{ width }} aria-hidden="true" />
   );
 }
 
@@ -21,12 +17,14 @@ export function SkeletonCard() {
 
 export function AgentCardSkeleton() {
   return (
-    <div className="card skeleton-card" style={{ flex: 1, minWidth: 240 }} aria-hidden="true">
-      <SkeletonLine width="60%" />
+    <div className="card skeleton-card" aria-hidden="true">
+      <SkeletonLine width="50%" />
+      <SkeletonLine width="100%" />
       <SkeletonLine width="30%" />
-      <SkeletonLine width="90%" />
+      <div style={{ height: 8 }} />
       <SkeletonLine width="70%" />
       <SkeletonLine width="85%" />
+      <SkeletonLine width="60%" />
     </div>
   );
 }

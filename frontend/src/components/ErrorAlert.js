@@ -1,30 +1,34 @@
 "use client";
 
-const CATEGORY_ICONS = {
-  network: "🔌",
-  timeout: "⏱",
-  rate_limit: "🚦",
-  llm_error: "🤖",
-  auth: "🔒",
-  validation: "⚠",
-  server: "🖥",
-  wallet: "👛",
+const CATEGORY_LABELS = {
+  network: "Network Error",
+  timeout: "Timeout",
+  rate_limit: "Rate Limited",
+  llm_error: "AI Error",
+  auth: "Auth Error",
+  validation: "Validation",
+  server: "Server Error",
+  wallet: "Wallet Error",
 };
 
 export default function ErrorAlert({ error, onRetry, onDismiss }) {
   if (!error) return null;
 
-  const message = typeof error === "string" ? error : error.message || "Something went wrong.";
+  const message =
+    typeof error === "string"
+      ? error
+      : error.message || "Something went wrong.";
   const category = error?.category || "unknown";
   const details = error?.details || "";
   const retryable = error?.retryable ?? !!onRetry;
-  const icon = CATEGORY_ICONS[category] || "❗";
+  const label = CATEGORY_LABELS[category] || "Error";
 
   return (
     <div role="alert" aria-live="assertive" className="error-alert">
       <div className="error-alert-header">
-        <span aria-hidden="true">{icon}</span>
-        <strong>{message}</strong>
+        <strong>
+          {label}: {message}
+        </strong>
       </div>
       {details && <p className="error-alert-details">{details}</p>}
       <div className="error-alert-actions">

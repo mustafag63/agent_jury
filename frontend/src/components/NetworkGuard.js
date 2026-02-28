@@ -6,7 +6,7 @@ import {
   getExpectedChainId,
   getNetworkStatus,
   onChainChanged,
-  switchToExpectedNetwork
+  switchToExpectedNetwork,
 } from "@/lib/contract";
 
 function expectedChainLabel() {
@@ -29,7 +29,9 @@ export default function NetworkGuard() {
       setStatus(nextStatus);
     } catch (err) {
       setStatus(null);
-      setError(err instanceof Error ? err.message : "Failed to check network");
+      setError(
+        err instanceof Error ? err.message : "Failed to check network",
+      );
     }
   }
 
@@ -40,7 +42,9 @@ export default function NetworkGuard() {
       await switchToExpectedNetwork();
       await refreshStatus();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to switch network");
+      setError(
+        err instanceof Error ? err.message : "Failed to switch network",
+      );
     } finally {
       setSwitching(false);
     }
@@ -70,18 +74,35 @@ export default function NetworkGuard() {
     <div className="network-banner">
       <p>
         <strong>Wrong network.</strong> Expected {status.expectedHex} (
-        {status.expected.toString()}) but got {status.currentHex} ({status.current.toString()}).
+        {status.expected.toString()}) but got {status.currentHex} (
+        {status.current.toString()}).
       </p>
-      <div className="row">
-        <button className="button" disabled={switching} onClick={switchNetwork}>
-          {switching ? "Switching..." : "Switch to Monad"}
+      <div className="row" style={{ marginTop: 12 }}>
+        <button
+          className="button button-sm"
+          disabled={switching}
+          onClick={switchNetwork}
+        >
+          {switching ? "Switching…" : "Switch to Monad Testnet"}
         </button>
-        <button className="button" disabled={switching} onClick={refreshStatus}>
-          Refresh network check
+        <button
+          className="button button-sm button-ghost"
+          disabled={switching}
+          onClick={refreshStatus}
+        >
+          Refresh
         </button>
       </div>
-      {error && <p style={{ color: "crimson", marginTop: 8 }}>{error}</p>}
-      {!error && <p style={{ marginTop: 8 }}>Target chain: {expectedLabel}</p>}
+      {error && (
+        <p style={{ color: "var(--danger)", marginTop: 8, fontSize: "0.8125rem" }}>
+          {error}
+        </p>
+      )}
+      {!error && (
+        <p style={{ marginTop: 8, fontSize: "0.8125rem", color: "var(--text-muted)" }}>
+          Target chain: {expectedLabel}
+        </p>
+      )}
     </div>
   );
 }

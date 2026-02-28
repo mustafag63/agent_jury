@@ -3,8 +3,9 @@ import NetworkGuard from "@/components/NetworkGuard";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Agent Jury MVP",
-  description: "Hackathon demo: AI jury + on-chain verdict storage",
+  title: "Agent Jury — AI Evaluation + On-Chain Verdicts",
+  description:
+    "Multi-agent AI evaluation system with immutable on-chain verdict storage on Monad.",
 };
 
 export default function RootLayout({ children }) {
@@ -15,14 +16,20 @@ export default function RootLayout({ children }) {
           Skip to main content
         </a>
         <header className="app-header" role="banner">
-          <nav aria-label="Main navigation" className="container nav-bar">
+          <nav aria-label="Main navigation" className="nav-bar">
             <Link href="/" className="nav-brand">
               Agent Jury
             </Link>
             <ul className="nav-links" role="list">
-              <li><Link href="/connect">Connect</Link></li>
-              <li><Link href="/submit">Submit</Link></li>
-              <li><Link href="/history">History</Link></li>
+              <li>
+                <Link href="/connect">Connect</Link>
+              </li>
+              <li>
+                <Link href="/submit">Evaluate</Link>
+              </li>
+              <li>
+                <Link href="/history">History</Link>
+              </li>
             </ul>
           </nav>
         </header>
@@ -30,8 +37,11 @@ export default function RootLayout({ children }) {
           <NetworkGuard />
           {children}
         </main>
-        <footer className="app-footer container" role="contentinfo">
-          <p>Agent Jury — AI evaluation + on-chain verdict storage</p>
+        <footer className="app-footer" role="contentinfo">
+          <p>
+            Agent Jury — Multi-agent AI evaluation with on-chain immutable
+            storage
+          </p>
         </footer>
       </body>
     </html>

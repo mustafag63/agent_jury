@@ -72,65 +72,82 @@ export default function SubmitPage() {
   const canSubmit = !loading && caseText.trim().length > 0 && !overLimit;
 
   return (
-    <div className="card">
-      <h2 id="submit-heading">2) Submit Case</h2>
+    <>
+      <div className="page-header">
+        <h2>
+          <span className="step-badge">2</span>
+          Submit Case
+        </h2>
+        <p>Describe the startup idea you want evaluated by the AI agents</p>
+      </div>
 
       {!walletAddress && (
-        <div className="error-alert" role="alert" style={{ marginBottom: 12 }}>
-          <div className="error-alert-header">
-            <span aria-hidden="true">👛</span>
-            <strong>Wallet not connected — <a href="/connect">connect first</a>.</strong>
-          </div>
+        <div className="warning-banner info-banner" role="alert">
+          <strong>Wallet not connected</strong> —{" "}
+          <a href="/connect">connect first</a> to save verdicts on-chain.
         </div>
       )}
 
-      <label htmlFor="case-input" className="sr-only">
-        Describe your startup case
-      </label>
-      <textarea
-        id="case-input"
-        rows={7}
-        style={{ width: "100%", marginBottom: 4 }}
-        placeholder="Example: AI assistant for compliance checks in fintech onboarding..."
-        value={caseText}
-        onChange={(e) => setCaseText(e.target.value)}
-        disabled={loading}
-        aria-describedby="char-count"
-        maxLength={MAX_CHARS + 100}
-      />
-      <p
-        id="char-count"
-        className={`char-count ${overLimit ? "char-count-over" : ""}`}
-        aria-live="polite"
-      >
-        {charCount} / {MAX_CHARS}
-      </p>
+      <div className="card">
+        <label htmlFor="case-input" style={{ display: "block", marginBottom: 8 }}>
+          <strong>Case Description</strong>
+        </label>
+        <textarea
+          id="case-input"
+          rows={8}
+          placeholder="Example: AI assistant for compliance checks in fintech onboarding. The platform uses NLP to automatically analyze KYC documents, reducing manual review time by 80%…"
+          value={caseText}
+          onChange={(e) => setCaseText(e.target.value)}
+          disabled={loading}
+          aria-describedby="char-count"
+          maxLength={MAX_CHARS + 100}
+        />
+        <p
+          id="char-count"
+          className={`char-count ${overLimit ? "char-count-over" : ""}`}
+          aria-live="polite"
+        >
+          {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()}
+        </p>
 
-      <button
-        className="button"
-        disabled={!canSubmit}
-        onClick={runEvaluation}
-        aria-describedby="submit-heading"
-      >
-        {loading ? "Evaluating…" : "Evaluate with Agents"}
-      </button>
+        <button
+          className="button"
+          disabled={!canSubmit}
+          onClick={runEvaluation}
+          aria-describedby="submit-heading"
+        >
+          {loading ? "Evaluating…" : "Evaluate with AI Agents"}
+        </button>
 
-      {loading && (
-        <div className="progress-indicator" role="status" aria-live="polite">
-          <div className="progress-bar">
-            <div
-              className="progress-bar-fill"
-              style={{ width: `${((progressIdx + 1) / PROGRESS_STEPS.length) * 100}%` }}
-            />
+        {loading && (
+          <div
+            className="progress-indicator"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="progress-bar">
+              <div
+                className="progress-bar-fill"
+                style={{
+                  width: `${((progressIdx + 1) / PROGRESS_STEPS.length) * 100}%`,
+                }}
+              />
+            </div>
+            <p className="progress-text">{PROGRESS_STEPS[progressIdx]}</p>
+            {retryAttempt > 0 && (
+              <p className="progress-retry">
+                Auto-retrying (attempt {retryAttempt + 1})…
+              </p>
+            )}
           </div>
-          <p className="progress-text">{PROGRESS_STEPS[progressIdx]}</p>
-          {retryAttempt > 0 && (
-            <p className="progress-retry">Auto-retrying (attempt {retryAttempt + 1})…</p>
-          )}
-        </div>
-      )}
+        )}
 
-      <ErrorAlert error={error} onRetry={runEvaluation} onDismiss={() => setError(null)} />
-    </div>
+        <ErrorAlert
+          error={error}
+          onRetry={runEvaluation}
+          onDismiss={() => setError(null)}
+        />
+      </div>
+    </>
   );
 }

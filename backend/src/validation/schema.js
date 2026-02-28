@@ -8,28 +8,45 @@ export const AgentResponseSchema = z
       primary: z.number().min(0).max(100),
       secondary: z.number().min(0).max(100),
       tertiary: z.number().min(0).max(100),
-    }),
-    pros: z.array(z.string().min(1).max(200)).min(1).max(5),
-    cons: z.array(z.string().min(1).max(200)).min(1).max(5),
-    evidence: z.array(z.string().min(1).max(300)).min(1).max(3),
-    rationale: z.string().min(1).max(600),
-    uncertainty_flags: z.array(z.string().max(150)).max(3),
+    }).optional(),
+    pros: z.array(z.string().max(300)).max(10),
+    cons: z.array(z.string().max(300)).max(10),
+    evidence: z.array(z.string().max(500)).max(5).optional(),
+    rationale: z.string().max(1200),
+    uncertainty_flags: z.array(z.string().max(200)).max(5).optional(),
   })
-  .strict();
+  .passthrough();
 
 export const AgentResponseSchemaLegacy = z
   .object({
     score: z.number().min(0).max(100),
-    pros: z.array(z.string().min(1).max(200)).max(5),
-    cons: z.array(z.string().min(1).max(200)).max(5),
-    rationale: z.string().min(1).max(600),
+    pros: z.array(z.string().max(300)).max(10),
+    cons: z.array(z.string().max(300)).max(10),
+    rationale: z.string().max(1200),
   })
-  .strict();
+  .passthrough();
+
+function extractJSON(text) {
+  const trimmed = text.trim();
+
+  const fenceMatch = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+  if (fenceMatch) return fenceMatch[1].trim();
+
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1);
+  }
+
+  return trimmed;
+}
 
 export function parseAndValidate(text) {
+  const cleaned = extractJSON(text);
+
   let parsed;
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(cleaned);
   } catch {
     throw new Error("Model response is not valid JSON");
   }

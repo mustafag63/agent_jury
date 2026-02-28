@@ -19,7 +19,7 @@ const DECISION_FROM_SCORE = (score) => {
 
 function formatTime(ts) {
   const ms = Number(ts) * 1000;
-  if (!ms) return "-";
+  if (!ms) return "–";
   return new Date(ms).toLocaleString();
 }
 
@@ -65,7 +65,8 @@ export default function HistoryPage() {
       }
       setAllItems(rows);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to read history";
+      const msg =
+        err instanceof Error ? err.message : "Failed to read history";
       setError({
         message: `Failed to read on-chain history: ${msg}`,
         category: "network",
@@ -123,21 +124,25 @@ export default function HistoryPage() {
   }, [search, decisionFilter, scoreMin, scoreMax, sortBy]);
 
   return (
-    <div className="card">
-      <h2 id="history-heading">5) On-chain History</h2>
-      <p className="trust-info">
-        These records are read directly from the smart contract via public RPC.
-        Each verdict is immutable and independently verifiable.{" "}
-        <a
-          href={`${MONAD_BLOCK_EXPLORER_URL}/address/${CONTRACT_ADDRESS}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          View contract on explorer
-        </a>
-      </p>
+    <>
+      <div className="page-header">
+        <h2>
+          <span className="step-badge">5</span>
+          On-Chain History
+        </h2>
+        <p>
+          All verdicts read directly from the smart contract — immutable and
+          verifiable.{" "}
+          <a
+            href={`${MONAD_BLOCK_EXPLORER_URL}/address/${CONTRACT_ADDRESS}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View contract
+          </a>
+        </p>
+      </div>
 
-      {/* Filter Bar */}
       <div className="filter-bar" role="search" aria-label="Filter verdicts">
         <div className="filter-row">
           <label htmlFor="history-search" className="sr-only">
@@ -177,8 +182,8 @@ export default function HistoryPage() {
           >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
-            <option value="score_high">Score (high → low)</option>
-            <option value="score_low">Score (low → high)</option>
+            <option value="score_high">Score high → low</option>
+            <option value="score_low">Score low → high</option>
           </select>
         </div>
 
@@ -194,7 +199,7 @@ export default function HistoryPage() {
             onChange={(e) => setScoreMin(Number(e.target.value) || 0)}
             aria-label="Minimum score"
           />
-          <span>–</span>
+          <span style={{ color: "var(--text-muted)" }}>–</span>
           <input
             id="score-max"
             type="number"
@@ -227,19 +232,41 @@ export default function HistoryPage() {
       )}
 
       {!loading && !error && filtered.length === 0 && (
-        <p>No verdicts match your filters.</p>
+        <div className="card" style={{ textAlign: "center" }}>
+          <p style={{ color: "var(--text-muted)" }}>
+            No verdicts match your filters.
+          </p>
+        </div>
       )}
 
       {pageItems.map((item) => (
-        <article key={item.index} className="card verdict-card" aria-label={`Verdict #${item.index}`}>
+        <article
+          key={item.index}
+          className="card verdict-card"
+          aria-label={`Verdict #${item.index}`}
+        >
           <div className="verdict-card-header">
             <strong>#{item.index}</strong>
-            <span className={decisionClass(item.decision)}>{item.decision}</span>
-            <span>Final: {item.finalScore}</span>
+            <span className={decisionClass(item.decision)}>
+              {item.decision}
+            </span>
+            <span style={{ color: "var(--text-primary)", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+              Score: {item.finalScore}
+            </span>
           </div>
           <div className="verdict-card-scores">
-            Feasibility {item.feasibilityScore} · Innovation{" "}
-            {item.innovationScore} · Risk {item.riskScore}
+            <span>
+              <span style={{ color: "var(--blue)" }}>●</span> Feasibility{" "}
+              {item.feasibilityScore}
+            </span>
+            <span>
+              <span style={{ color: "var(--purple)" }}>●</span> Innovation{" "}
+              {item.innovationScore}
+            </span>
+            <span>
+              <span style={{ color: "var(--amber)" }}>●</span> Risk{" "}
+              {item.riskScore}
+            </span>
           </div>
           <p className="verdict-card-text">{item.shortVerdict}</p>
           <div className="verdict-card-meta">
@@ -260,11 +287,10 @@ export default function HistoryPage() {
         </article>
       ))}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <nav className="pagination" aria-label="Verdict pages">
           <button
-            className="button button-sm"
+            className="button button-sm button-ghost"
             disabled={safePage === 0}
             onClick={() => setPage(safePage - 1)}
             aria-label="Previous page"
@@ -275,7 +301,7 @@ export default function HistoryPage() {
             Page {safePage + 1} of {totalPages}
           </span>
           <button
-            className="button button-sm"
+            className="button button-sm button-ghost"
             disabled={safePage >= totalPages - 1}
             onClick={() => setPage(safePage + 1)}
             aria-label="Next page"
@@ -284,6 +310,6 @@ export default function HistoryPage() {
           </button>
         </nav>
       )}
-    </div>
+    </>
   );
 }

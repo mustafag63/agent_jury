@@ -2,16 +2,40 @@
 
 import { AgentCardSkeleton } from "./LoadingSkeleton";
 
+const AGENT_CONFIG = {
+  "Feasibility Agent": { icon: "◈", cssClass: "agent-feasibility" },
+  "Innovation Agent": { icon: "◇", cssClass: "agent-innovation" },
+  "Risk & Ethics Agent": { icon: "△", cssClass: "agent-risk" },
+};
+
+function getScoreColor(pct) {
+  if (pct >= 70) return "#34d399";
+  if (pct >= 40) return "#fbbf24";
+  return "#f87171";
+}
+
 function ScoreBar({ value, label }) {
   const pct = Math.max(0, Math.min(100, value));
-  const color = pct >= 70 ? "#22c55e" : pct >= 40 ? "#eab308" : "#ef4444";
+  const color = getScoreColor(pct);
 
   return (
-    <div className="score-bar-container" role="meter" aria-label={label} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+    <div
+      className="score-bar-container"
+      role="meter"
+      aria-label={label}
+      aria-valuenow={pct}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
       <div className="score-bar-track">
-        <div className="score-bar-fill" style={{ width: `${pct}%`, background: color }} />
+        <div
+          className="score-bar-fill"
+          style={{ width: `${pct}%`, background: color }}
+        />
       </div>
-      <span className="score-bar-value">{pct}</span>
+      <span className="score-bar-value" style={{ color }}>
+        {pct}
+      </span>
     </div>
   );
 }
@@ -19,16 +43,22 @@ function ScoreBar({ value, label }) {
 export default function AgentCard({ agent, loading }) {
   if (loading) return <AgentCardSkeleton />;
 
+  const config = AGENT_CONFIG[agent.role] || {
+    icon: "●",
+    cssClass: "",
+  };
   const biasFlags = agent.bias_flags || [];
   const uncertaintyFlags = agent.uncertainty_flags || [];
 
   return (
     <article
-      className="card agent-card"
-      style={{ flex: 1, minWidth: 240 }}
+      className={`card agent-card ${config.cssClass}`}
       aria-label={`${agent.role} evaluation`}
     >
-      <h3>{agent.role}</h3>
+      <h3>
+        <span className="agent-icon">{config.icon}</span>
+        {agent.role}
+      </h3>
 
       <ScoreBar value={agent.score} label={`${agent.role} score`} />
 
@@ -62,22 +92,30 @@ export default function AgentCard({ agent, loading }) {
 
       {agent.rationale && (
         <details>
-          <summary><strong>Rationale</strong></summary>
+          <summary>
+            <strong>Rationale</strong>
+          </summary>
           <p>{agent.rationale}</p>
         </details>
       )}
 
       {(biasFlags.length > 0 || uncertaintyFlags.length > 0) && (
         <details>
-          <summary><strong>Flags</strong> ({biasFlags.length + uncertaintyFlags.length})</summary>
+          <summary>
+            <strong>Flags</strong> ({biasFlags.length + uncertaintyFlags.length})
+          </summary>
           {biasFlags.length > 0 && (
             <ul className="flag-list bias">
-              {biasFlags.map((f, i) => <li key={`b-${i}`}>{f}</li>)}
+              {biasFlags.map((f, i) => (
+                <li key={`b-${i}`}>{f}</li>
+              ))}
             </ul>
           )}
           {uncertaintyFlags.length > 0 && (
             <ul className="flag-list uncertainty">
-              {uncertaintyFlags.map((f, i) => <li key={`u-${i}`}>{f}</li>)}
+              {uncertaintyFlags.map((f, i) => (
+                <li key={`u-${i}`}>{f}</li>
+              ))}
             </ul>
           )}
         </details>

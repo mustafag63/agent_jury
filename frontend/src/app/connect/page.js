@@ -35,7 +35,8 @@ export default function ConnectPage() {
           }
         };
         window.ethereum.on("accountsChanged", onAccounts);
-        return () => window.ethereum?.removeListener?.("accountsChanged", onAccounts);
+        return () =>
+          window.ethereum?.removeListener?.("accountsChanged", onAccounts);
       }
     }
   }, []);
@@ -67,13 +68,15 @@ export default function ConnectPage() {
 
       if (msg.includes("User rejected") || msg.includes("user rejected")) {
         setError({
-          message: "Connection request rejected. Please approve the MetaMask prompt.",
+          message:
+            "Connection request rejected. Please approve the MetaMask prompt.",
           category: "wallet",
           retryable: true,
         });
       } else if (msg.includes("Already processing")) {
         setError({
-          message: "MetaMask is busy. Check for a pending prompt in MetaMask.",
+          message:
+            "MetaMask is busy. Check for a pending prompt in MetaMask.",
           category: "wallet",
           retryable: true,
         });
@@ -91,66 +94,85 @@ export default function ConnectPage() {
   }
 
   return (
-    <div className="card">
-      <h2 id="connect-heading">1) Connect MetaMask</h2>
+    <>
+      <div className="page-header">
+        <h2>
+          <span className="step-badge">1</span>
+          Connect Wallet
+        </h2>
+        <p>Link your MetaMask wallet to get started</p>
+      </div>
 
       {backendOk === false && (
-        <div className="error-alert" role="alert" style={{ marginBottom: 12 }}>
-          <div className="error-alert-header">
-            <span aria-hidden="true">🔌</span>
-            <strong>Backend unreachable — evaluation will not work until the server is online.</strong>
-          </div>
+        <div className="warning-banner info-banner" role="alert">
+          <strong>Backend unreachable</strong> — evaluation will not work until
+          the server is online.
         </div>
       )}
 
-      {!hasMetaMask ? (
-        <div>
-          <p>MetaMask is required to use this application.</p>
-          <a
-            href="https://metamask.io/download/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="button"
-            style={{ display: "inline-block", textDecoration: "none" }}
-          >
-            Install MetaMask
-          </a>
-        </div>
-      ) : !address ? (
-        <button
-          className="button"
-          onClick={connectWallet}
-          disabled={connecting}
-          aria-describedby="connect-heading"
-        >
-          {connecting ? "Connecting…" : "Connect Wallet"}
-        </button>
-      ) : (
-        <div>
-          <p>
-            Connected:{" "}
-            <code aria-label="Wallet address">
-              {address.slice(0, 6)}…{address.slice(-4)}
-            </code>
-          </p>
-          <div className="row">
+      <div className="card">
+        {!hasMetaMask ? (
+          <div>
+            <h3>MetaMask Required</h3>
+            <p>
+              MetaMask is required to interact with the blockchain. Install it to
+              continue.
+            </p>
+            <a
+              href="https://metamask.io/download/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="button"
+            >
+              Install MetaMask
+            </a>
+          </div>
+        ) : !address ? (
+          <div>
+            <h3>No Wallet Connected</h3>
+            <p>
+              Connect your MetaMask wallet to authenticate and sign on-chain
+              transactions.
+            </p>
             <button
               className="button"
-              onClick={() => router.push("/submit")}
+              onClick={connectWallet}
+              disabled={connecting}
+              aria-describedby="connect-heading"
             >
-              Continue to Case Input
-            </button>
-            <button
-              className="button button-ghost"
-              onClick={disconnectWallet}
-            >
-              Disconnect
+              {connecting ? "Connecting…" : "Connect MetaMask"}
             </button>
           </div>
-        </div>
-      )}
+        ) : (
+          <div>
+            <h3>Wallet Connected</h3>
+            <div className="wallet-status" style={{ marginBottom: 16 }}>
+              <span className="wallet-dot" />
+              {address.slice(0, 6)}…{address.slice(-4)}
+            </div>
+            <div className="row">
+              <button
+                className="button"
+                onClick={() => router.push("/submit")}
+              >
+                Continue to Case Input
+              </button>
+              <button
+                className="button button-ghost"
+                onClick={disconnectWallet}
+              >
+                Disconnect
+              </button>
+            </div>
+          </div>
+        )}
 
-      <ErrorAlert error={error} onRetry={connectWallet} onDismiss={() => setError(null)} />
-    </div>
+        <ErrorAlert
+          error={error}
+          onRetry={connectWallet}
+          onDismiss={() => setError(null)}
+        />
+      </div>
+    </>
   );
 }
