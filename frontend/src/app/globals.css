@@ -26,6 +26,27 @@ body {
   margin-bottom: 16px;
 }
 
+.network-banner {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.network-banner p {
+  margin: 0;
+}
+
+.network-banner .row {
+  margin-top: 10px;
+}
+
+.network-banner-error {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
 .row {
   display: flex;
   gap: 12px;

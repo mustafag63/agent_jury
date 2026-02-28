@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getBrowserProvider } from "@/lib/contract";
+import { ensureCorrectNetwork, getBrowserProvider } from "@/lib/contract";
 import { setSession } from "@/lib/storage";
 
 export default function ConnectPage() {
@@ -15,11 +15,13 @@ export default function ConnectPage() {
       setError("");
       const provider = await getBrowserProvider();
       await provider.send("eth_requestAccounts", []);
+      await ensureCorrectNetwork(provider);
       const signer = await provider.getSigner();
       const signerAddress = await signer.getAddress();
       setAddress(signerAddress);
       setSession({ walletAddress: signerAddress });
     } catch (err) {
+      setAddress("");
       setError(err instanceof Error ? err.message : "Failed to connect");
     }
   }

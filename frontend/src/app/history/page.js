@@ -37,7 +37,8 @@ export default function HistoryPage() {
         }
         setItems(rows);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to read history");
+        const message = err instanceof Error ? err.message : "Failed to read history";
+        setError(`Failed to read history from RPC: ${message}`);
       } finally {
         setLoading(false);
       }

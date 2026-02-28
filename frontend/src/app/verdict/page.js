@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { keccak256, toUtf8Bytes } from "ethers";
 import { getSession, setSession } from "@/lib/storage";
-import { getWriteContract } from "@/lib/contract";
+import { ensureCorrectNetwork, getBrowserProvider, getWriteContract } from "@/lib/contract";
 
 function decisionClass(decision) {
   if (decision === "SHIP") return "badge ship";
@@ -38,7 +38,10 @@ export default function VerdictPage() {
       setError("");
       setTxHash("");
 
+      const provider = await getBrowserProvider();
+      await ensureCorrectNetwork(provider);
       const contract = await getWriteContract();
+      await ensureCorrectNetwork(provider);
       const hash = keccak256(toUtf8Bytes(caseText));
       const tx = await contract.saveVerdict(
         hash,
@@ -52,7 +55,12 @@ export default function VerdictPage() {
       setTxHash(tx.hash);
       setSession({ lastTxHash: tx.hash });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save on-chain");
+      const message = err instanceof Error ? err.message : "Failed to save on-chain";
+      if (message.toLowerCase().includes("wrong network")) {
+        setError("Please switch to Monad Testnet in MetaMask and try again.");
+      } else {
+        setError(message);
+      }
     } finally {
       setSaving(false);
     }

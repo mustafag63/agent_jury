@@ -1,4 +1,5 @@
 import "./globals.css";
+import NetworkGuard from "@/components/NetworkGuard";
 
 export const metadata = {
   title: "Agent Jury MVP",
@@ -12,6 +13,7 @@ export default function RootLayout({ children }) {
         <main className="container">
           <h1>Agent Jury</h1>
           <p>Three AI agents debate. Final judge decides. Save result on-chain.</p>
+          <NetworkGuard />
           {children}
         </main>
       </body>
