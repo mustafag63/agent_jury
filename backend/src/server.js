@@ -10,7 +10,9 @@ app.use(express.json({ limit: "1mb" }));
 
 const PORT = process.env.PORT || 4000;
 const LLM_API_KEY = process.env.LLM_API_KEY || "";
-const LLM_MODEL = process.env.LLM_MODEL || "gemini-2.5-flash";
+const LLM_PROVIDER = process.env.LLM_PROVIDER || "openrouter";
+const LLM_MODEL = process.env.LLM_MODEL || "google/gemini-2.0-flash-001";
+const LLM_MODEL_FALLBACK = process.env.LLM_MODEL_FALLBACK || "google/gemini-2.0-flash-lite-001";
 const ATTESTATION_PRIVATE_KEY = process.env.ATTESTATION_PRIVATE_KEY || "";
 
 function getAttestationWallet() {
@@ -105,32 +107,37 @@ app.post("/evaluate", async (req, res) => {
       return res.status(500).json({ error: "Missing LLM_API_KEY on backend" });
     }
 
-    const [feasibility, innovation, risk] = await Promise.all([
-      runSingleAgent({
-        apiKey: LLM_API_KEY,
-        model: LLM_MODEL,
-        roleName: "Feasibility Agent",
-        focusPrompt:
-          "Assess implementation realism, scope for a small team, and delivery speed.",
-        caseText
-      }),
-      runSingleAgent({
-        apiKey: LLM_API_KEY,
-        model: LLM_MODEL,
-        roleName: "Innovation Agent",
-        focusPrompt:
-          "Assess novelty, market differentiation, and user value uniqueness.",
-        caseText
-      }),
-      runSingleAgent({
-        apiKey: LLM_API_KEY,
-        model: LLM_MODEL,
-        roleName: "Risk & Ethics Agent",
-        focusPrompt:
-          "Assess legal, misuse, safety, fairness, and ethical concerns. Higher score means higher risk.",
-        caseText
-      })
-    ]);
+    const INTER_CALL_DELAY_MS = 1_500;
+
+    const agentOpts = { provider: LLM_PROVIDER, apiKey: LLM_API_KEY, model: LLM_MODEL, fallbackModel: LLM_MODEL_FALLBACK };
+
+    const feasibility = await runSingleAgent({
+      ...agentOpts,
+      roleName: "Feasibility Agent",
+      focusPrompt:
+        "Assess implementation realism, scope for a small team, and delivery speed.",
+      caseText
+    });
+
+    await new Promise((r) => setTimeout(r, INTER_CALL_DELAY_MS));
+
+    const innovation = await runSingleAgent({
+      ...agentOpts,
+      roleName: "Innovation Agent",
+      focusPrompt:
+        "Assess novelty, market differentiation, and user value uniqueness.",
+      caseText
+    });
+
+    await new Promise((r) => setTimeout(r, INTER_CALL_DELAY_MS));
+
+    const risk = await runSingleAgent({
+      ...agentOpts,
+      roleName: "Risk & Ethics Agent",
+      focusPrompt:
+        "Assess legal, misuse, safety, fairness, and ethical concerns. Higher score means higher risk.",
+      caseText
+    });
 
     const agent_results = [feasibility, innovation, risk];
     const final_verdict = buildFinalVerdict(agent_results);

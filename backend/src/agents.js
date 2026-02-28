@@ -5,9 +5,11 @@ You are a strict JSON API.
 Return ONLY valid JSON. No markdown, no backticks, no prose outside JSON.
 `.trim();
 
-const FETCH_TIMEOUT_MS = 12_000;
-const FETCH_MAX_RETRIES = 2;
-const FETCH_BACKOFF_BASE_MS = 400;
+const FETCH_TIMEOUT_MS = 15_000;
+const FETCH_MAX_RETRIES = 3;
+const FETCH_MAX_RETRIES_429 = 2;
+const FETCH_BACKOFF_BASE_MS = 500;
+const FETCH_BACKOFF_BASE_MS_429 = 2_000;
 
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
 const GEMINI_RESPONSE_SCHEMA = {
@@ -91,9 +93,29 @@ function normalizeAgentResponse(validated, role) {
   };
 }
 
+function resolveBackoff(status, attempt, headers) {
+  if (status === 429) {
+    const retryAfter = headers?.get?.("retry-after");
+    if (retryAfter) {
+      const seconds = Number(retryAfter);
+      if (Number.isFinite(seconds) && seconds > 0) {
+        return Math.min(seconds * 1000, 60_000);
+      }
+    }
+    return Math.min(FETCH_BACKOFF_BASE_MS_429 * 2 ** attempt, 30_000);
+  }
+  return FETCH_BACKOFF_BASE_MS * 2 ** attempt;
+}
+
+function maxRetriesForStatus(status) {
+  return status === 429 ? FETCH_MAX_RETRIES_429 : FETCH_MAX_RETRIES;
+}
+
 async function callGemini({ apiKey, model, prompt }) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-  for (let attempt = 0; attempt <= FETCH_MAX_RETRIES; attempt += 1) {
+  const maxAttempts = FETCH_MAX_RETRIES_429;
+
+  for (let attempt = 0; attempt <= maxAttempts; attempt += 1) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -121,8 +143,10 @@ async function callGemini({ apiKey, model, prompt }) {
 
       if (!res.ok) {
         const detail = await res.text();
-        if (attempt < FETCH_MAX_RETRIES && RETRYABLE_STATUS_CODES.has(res.status)) {
-          const backoffMs = FETCH_BACKOFF_BASE_MS * 2 ** attempt;
+        const allowed = maxRetriesForStatus(res.status);
+        if (attempt < allowed && RETRYABLE_STATUS_CODES.has(res.status)) {
+          const backoffMs = resolveBackoff(res.status, attempt, res.headers);
+          console.warn(`[callGemini] ${res.status} on attempt ${attempt + 1}, retrying in ${backoffMs}ms…`);
           await sleep(backoffMs);
           continue;
         }
@@ -156,14 +180,88 @@ async function callGemini({ apiKey, model, prompt }) {
   throw new Error("LLM call failed after retries");
 }
 
+async function callOpenRouter({ apiKey, model, systemPrompt, userPrompt }) {
+  const endpoint = "https://openrouter.ai/api/v1/chat/completions";
+  const maxAttempts = FETCH_MAX_RETRIES_429;
+
+  for (let attempt = 0; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ]
+        }),
+        signal: controller.signal
+      });
+
+      if (!res.ok) {
+        const detail = await res.text();
+        const allowed = maxRetriesForStatus(res.status);
+        if (attempt < allowed && RETRYABLE_STATUS_CODES.has(res.status)) {
+          const backoffMs = resolveBackoff(res.status, attempt, res.headers);
+          console.warn(`[callOpenRouter] ${res.status} on attempt ${attempt + 1}, retrying in ${backoffMs}ms…`);
+          await sleep(backoffMs);
+          continue;
+        }
+        throw new Error(`LLM call failed (${res.status}): ${detail}`);
+      }
+
+      const json = await res.json();
+      const content = json?.choices?.[0]?.message?.content?.trim() ?? "";
+      if (!content) {
+        throw new Error("LLM response missing message content");
+      }
+      return content;
+    } catch (error) {
+      if (attempt < FETCH_MAX_RETRIES && isRetryableError(error)) {
+        const backoffMs = FETCH_BACKOFF_BASE_MS * 2 ** attempt;
+        await sleep(backoffMs);
+        continue;
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  throw new Error("LLM call failed after retries");
+}
+
+async function callLLM({ provider, apiKey, model, systemPrompt, userPrompt }) {
+  if (provider === "openrouter") {
+    return callOpenRouter({ apiKey, model, systemPrompt, userPrompt });
+  }
+  const prompt = `${systemPrompt}\n\n${userPrompt}`;
+  return callGemini({ apiKey, model, prompt });
+}
+
+function is429Error(err) {
+  return err instanceof Error && err.message.includes("(429)");
+}
+
 export async function runSingleAgent({
+  provider,
   apiKey,
   model,
+  fallbackModel,
   roleName,
   focusPrompt,
   caseText
 }) {
-  const system = `${JSON_SYSTEM_RULES}
+  const systemPrompt = `${JSON_SYSTEM_RULES}
 
 You are the "${roleName}" in a startup hackathon jury.
 Output schema:
@@ -174,7 +272,7 @@ Output schema:
   "rationale": "short explanation"
 }`;
 
-  const user = `Evaluate this case:
+  const userPrompt = `Evaluate this case:
 "${caseText}"
 
 Focus:
@@ -185,10 +283,29 @@ Constraints:
 - Score must be numeric 0-100.
 - Return JSON only.`;
 
-  const prompt = `${system}\n\n${user}`;
-  const raw = await callGemini({ apiKey, model, prompt });
-  const validated = parseAndValidateAgentResponse(raw);
-  return normalizeAgentResponse(validated, roleName);
+  const models = fallbackModel && fallbackModel !== model
+    ? [model, fallbackModel]
+    : [model];
+
+  let lastError;
+  for (const currentModel of models) {
+    try {
+      if (currentModel !== model) {
+        console.warn(`[${roleName}] Falling back to ${currentModel}`);
+      }
+      const raw = await callLLM({ provider, apiKey, model: currentModel, systemPrompt, userPrompt });
+      const validated = parseAndValidateAgentResponse(raw);
+      return normalizeAgentResponse(validated, roleName);
+    } catch (err) {
+      lastError = err;
+      if (is429Error(err) && currentModel !== models[models.length - 1]) {
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastError;
 }
 
 export function buildFinalVerdict(agentResults) {

@@ -1,0 +1,153 @@
+/*!*****************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./src/app/globals.css ***!
+  \*****************************************************************************************************************************************************************************************************************************************************************/
+:root {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: #111827;
+  background: #f9fafb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.network-banner {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.network-banner p {
+  margin: 0;
+}
+
+.network-banner .row {
+  margin-top: 10px;
+}
+
+.network-banner-error {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.button {
+  background: #111827;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge.ship {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge.iterate {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge.reject {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.trust-info {
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 10px;
+  padding: 12px;
+  margin: 12px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.trust-info a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.attestation-info {
+  color: #166534;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.tx-confirmation {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.tx-confirmation a {
+  color: #2563eb;
+  text-decoration: underline;
+  font-family: monospace;
+}
+
+.verify-hint {
+  font-size: 13px;
+  color: #4b5563;
+  margin-top: 4px;
+}
+
+.thinking {
+  opacity: 0.7;
+  animation: pulse 1s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.3;
+  }
+}
+
